@@ -9,20 +9,270 @@ body {
   background-color: #1a1a2e;
   color: #eaeaea;
   min-height: 100vh;
-  display: flex;
-  justify-content: center;
-  align-items: center;
+  overflow: hidden;
 }
 
-#app {
+/* Screen management */
+.screen {
+  display: none;
+  width: 100vw;
+  height: 100vh;
+}
+
+.screen.active {
   display: flex;
-  align-items: center;
-  gap: 4rem;
-  padding: 2rem;
+}
+
+/* Main Screen */
+#mainScreen {
+  position: relative;
 }
 
 .main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* Top Controls */
+.top-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 2rem;
+  background-color: #0d0d1a;
+  border-bottom: 2px solid #333;
+}
+
+.title-section h1 {
+  font-size: 1.8rem;
+  margin-bottom: 0.25rem;
+}
+
+.title-section p {
+  font-size: 0.9rem;
+  margin-bottom: 0;
+}
+
+.controls-section {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.controls-section .mic-selector {
+  margin-bottom: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.controls-section .mic-selector label {
+  margin-bottom: 0;
+}
+
+.controls-section .mic-selector select {
+  width: auto;
+  min-width: 200px;
+}
+
+/* Teacher Display */
+.teacher-display {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  transition: background-image 0.3s ease;
+}
+
+.teacher-placeholder {
   text-align: center;
+  color: #666;
+}
+
+.teacher-placeholder p {
+  font-size: 1.5rem;
+  margin-bottom: 0;
+}
+
+.level-indicator {
+  font-size: 4rem;
+  font-weight: bold;
+  padding: 2rem 4rem;
+  border-radius: 16px;
+  text-transform: uppercase;
+  letter-spacing: 4px;
+  transition: all 0.3s ease;
+}
+
+.level-indicator[data-level="0"] {
+  color: #00ff88;
+  background-color: rgba(0, 255, 136, 0.1);
+  border: 3px solid #00ff88;
+}
+
+.level-indicator[data-level="1"] {
+  color: #88ff00;
+  background-color: rgba(136, 255, 0, 0.1);
+  border: 3px solid #88ff00;
+}
+
+.level-indicator[data-level="2"] {
+  color: #ffff00;
+  background-color: rgba(255, 255, 0, 0.1);
+  border: 3px solid #ffff00;
+}
+
+.level-indicator[data-level="3"] {
+  color: #ff8800;
+  background-color: rgba(255, 136, 0, 0.1);
+  border: 3px solid #ff8800;
+}
+
+.level-indicator[data-level="4"] {
+  color: #ff0000;
+  background-color: rgba(255, 0, 0, 0.1);
+  border: 3px solid #ff0000;
+  animation: pulse 0.5s ease-in-out infinite alternate;
+}
+
+@keyframes pulse {
+  from { transform: scale(1); }
+  to { transform: scale(1.05); }
+}
+
+/* Settings Gear Button */
+.settings-gear {
+  position: absolute;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  width: 48px;
+  height: 48px;
+  background: transparent;
+  border: 2px solid #333;
+  border-radius: 50%;
+  cursor: pointer;
+  color: #666;
+  padding: 10px;
+  transition: all 0.2s ease;
+}
+
+.settings-gear:hover {
+  color: #00d4ff;
+  border-color: #00d4ff;
+  transform: rotate(45deg);
+}
+
+.settings-gear svg {
+  width: 100%;
+  height: 100%;
+}
+
+/* Settings Screen */
+#settingsScreen {
+  flex-direction: column;
+  position: relative;
+}
+
+/* Back Button */
+.back-button {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: transparent;
+  border: 2px solid #333;
+  border-radius: 8px;
+  color: #888;
+  padding: 0.5rem 1rem;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.back-button:hover {
+  color: #00d4ff;
+  border-color: #00d4ff;
+}
+
+.back-button svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* Settings Container */
+.settings-container {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  padding-top: 4rem;
+}
+
+/* Settings Sidebar */
+.settings-sidebar {
+  width: 200px;
+  background-color: #0d0d1a;
+  border-right: 2px solid #333;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.sidebar-btn {
+  background: transparent;
+  border: none;
+  color: #888;
+  padding: 1rem;
+  font-size: 1rem;
+  text-align: left;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.sidebar-btn:hover {
+  background-color: #1a1a2e;
+  color: #eaeaea;
+}
+
+.sidebar-btn.active {
+  background-color: #00d4ff;
+  color: #1a1a2e;
+  font-weight: bold;
+}
+
+/* Settings Content */
+.settings-content {
+  flex: 1;
+  padding: 2rem;
+  overflow-y: auto;
+}
+
+.settings-panel {
+  display: none;
+}
+
+.settings-panel.active {
+  display: block;
+}
+
+.settings-panel h2 {
+  font-size: 2rem;
+  color: #00d4ff;
+  margin-bottom: 1rem;
+}
+
+.settings-panel p {
+  color: #888;
+  margin-bottom: 0;
 }
 
 h1 {
@@ -42,13 +292,18 @@ p {
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: 1rem;
+  padding: 2rem 1.5rem;
+  background-color: #0d0d1a;
+  border-right: 2px solid #333;
+  height: 100vh;
 }
 
 .meter-container {
   width: 60px;
-  height: 300px;
-  background-color: #0d0d1a;
+  height: 80vh;
+  background-color: #151525;
   border: 2px solid #333;
   border-radius: 8px;
   position: relative;
