@@ -1,0 +1,24 @@
+{
+  "name": "chattycathy",
+  "version": "1.0.0",
+  "description": "Simple volume tracker with humorous indications for when the volume exceeds appropriate and productive levels.",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Mumblinmad/ChattyCathy.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Mumblinmad/ChattyCathy/issues"
+  },
+  "homepage": "https://github.com/Mumblinmad/ChattyCathy#readme",
+  "devDependencies": {
+    "electron": "39.2.7"
+  }
+}

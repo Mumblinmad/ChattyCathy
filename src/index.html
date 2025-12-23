@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; media-src 'self' mediastream:">
+  <title>Chatty Cathy - Classroom Noise Monitor</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div id="app">
+    <div class="volume-meter">
+      <div class="meter-container">
+        <div class="meter-fill" id="meterFill"></div>
+        <div class="meter-segments">
+          <div class="segment"></div>
+          <div class="segment"></div>
+          <div class="segment"></div>
+          <div class="segment"></div>
+          <div class="segment"></div>
+          <div class="segment"></div>
+          <div class="segment"></div>
+          <div class="segment"></div>
+          <div class="segment"></div>
+          <div class="segment"></div>
+        </div>
+      </div>
+      <div class="meter-label">VOLUME</div>
+    </div>
+    <div class="main-content">
+      <h1>Chatty Cathy</h1>
+      <p>Classroom Noise Monitor</p>
+      <div class="mic-selector">
+        <label for="micSelect">Microphone:</label>
+        <select id="micSelect"></select>
+      </div>
+      <button id="startBtn" class="start-button">Start Monitoring</button>
+    </div>
+  </div>
+  <script src="renderer.js"></script>
+</body>
+</html>
