@@ -1,0 +1,44 @@
+# Dependencies
+node_modules/
+
+# Claude Code
+.claude/
+
+# Build output
+dist/
+out/
+build/
+
+# Electron
+*.asar
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# IDE/Editor
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Coverage
+coverage/
+
+# Temporary files
+tmp/
+temp/
+*.tmp

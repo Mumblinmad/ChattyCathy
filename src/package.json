@@ -1,0 +1,16 @@
+{
+  "name": "snotty-discovery-clothe-adizl",
+  "productName": "snotty-discovery-clothe-adizl",
+  "description": "My Electron application description",
+  "keywords": [],
+  "main": "./main.js",
+  "version": "1.0.0",
+  "author": "spart",
+  "scripts": {
+    "start": "electron ."
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "electron": "39.2.7"
+  }
+}
