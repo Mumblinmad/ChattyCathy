@@ -507,8 +507,8 @@ p {
 }
 
 .stop-image-preview {
-  width: 150px;
-  height: 150px;
+  width: 250px;
+  height: 250px;
   background-color: #151525;
   border: 2px dashed #333;
   border-radius: 8px;
@@ -518,12 +518,47 @@ p {
   color: #666;
   background-size: cover;
   background-position: center;
+  cursor: move;
+  overflow: hidden;
 }
 
 .stop-image-controls {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+}
+
+.fit-mode-toggle {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.fit-mode-btn {
+  background-color: transparent;
+  color: #888;
+  border: 2px solid #333;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: all 0.2s ease;
+}
+
+.fit-mode-btn:hover {
+  border-color: #00d4ff;
+  color: #00d4ff;
+}
+
+.fit-mode-btn.active {
+  background-color: #00d4ff;
+  color: #1a1a2e;
+  border-color: #00d4ff;
+}
+
+.position-hint {
+  color: #666;
+  font-size: 0.8rem;
+  font-style: italic;
 }
 
 .upload-btn {

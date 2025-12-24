@@ -247,11 +247,11 @@ class TeacherDisplay {
     // Define noise level thresholds and corresponding images
     // These will be configurable in settings later
     this.levels = [
-      { threshold: 0, image: null, label: 'Silent' },
-      { threshold: 20, image: null, label: 'Quiet' },
-      { threshold: 40, image: null, label: 'Normal' },
-      { threshold: 60, image: null, label: 'Loud' },
-      { threshold: 80, image: null, label: 'Very Loud' }
+      { threshold: 0, image: null, label: 'Silent', fitMode: 'cover', position: { x: 50, y: 50 } },
+      { threshold: 20, image: null, label: 'Quiet', fitMode: 'cover', position: { x: 50, y: 50 } },
+      { threshold: 40, image: null, label: 'Normal', fitMode: 'cover', position: { x: 50, y: 50 } },
+      { threshold: 60, image: null, label: 'Loud', fitMode: 'cover', position: { x: 50, y: 50 } },
+      { threshold: 80, image: null, label: 'Very Loud', fitMode: 'cover', position: { x: 50, y: 50 } }
     ];
   }
 
@@ -283,10 +283,16 @@ class TeacherDisplay {
 
     // Set background image if available
     if (level.image) {
+      const fitMode = level.fitMode || 'cover';
+      const pos = level.position || { x: 50, y: 50 };
       this.container.style.backgroundImage = `url('${level.image}')`;
+      this.container.style.backgroundSize = fitMode;
+      this.container.style.backgroundPosition = `${pos.x}% ${pos.y}%`;
     } else {
       // Show level indicator when no image is set
       this.container.style.backgroundImage = 'none';
+      this.container.style.backgroundSize = 'cover';
+      this.container.style.backgroundPosition = 'center';
       this.showLevelIndicator(level);
     }
   }
@@ -324,10 +330,15 @@ class MeterSegments {
   constructor() {
     this.meterContainer = document.getElementById('meterContainer');
     this.meterSegments = document.getElementById('meterSegments');
+    this.meterFill = document.getElementById('meterFill');
     this.segmentHeight = 30; // pixels per segment
 
     this.createSegments();
-    window.addEventListener('resize', () => this.createSegments());
+    this.updateGradientSize();
+    window.addEventListener('resize', () => {
+      this.createSegments();
+      this.updateGradientSize();
+    });
   }
 
   createSegments() {
@@ -340,6 +351,13 @@ class MeterSegments {
       segment.className = 'segment';
       this.meterSegments.appendChild(segment);
     }
+  }
+
+  updateGradientSize() {
+    // Set gradient to span full container height so colors match volume level
+    const containerHeight = this.meterContainer.offsetHeight;
+    this.meterFill.style.backgroundSize = `100% ${containerHeight}px`;
+    this.meterFill.style.backgroundPosition = 'bottom';
   }
 }
 
@@ -356,20 +374,29 @@ class ThresholdEditor {
     this.removeImageBtn = document.getElementById('removeImageBtn');
     this.stopLabelInput = document.getElementById('stopLabelInput');
     this.levelsList = document.getElementById('levelsList');
+    this.fitCoverBtn = document.getElementById('fitCoverBtn');
+    this.fitContainBtn = document.getElementById('fitContainBtn');
 
     // Default stops
     this.defaultStops = [
-      { threshold: 0, image: null, label: 'Silent' },
-      { threshold: 20, image: null, label: 'Quiet' },
-      { threshold: 40, image: null, label: 'Normal' },
-      { threshold: 60, image: null, label: 'Loud' },
-      { threshold: 80, image: null, label: 'Very Loud' }
+      { threshold: 0, image: null, label: 'Silent', fitMode: 'cover', position: { x: 50, y: 50 } },
+      { threshold: 20, image: null, label: 'Quiet', fitMode: 'cover', position: { x: 50, y: 50 } },
+      { threshold: 40, image: null, label: 'Normal', fitMode: 'cover', position: { x: 50, y: 50 } },
+      { threshold: 60, image: null, label: 'Loud', fitMode: 'cover', position: { x: 50, y: 50 } },
+      { threshold: 80, image: null, label: 'Very Loud', fitMode: 'cover', position: { x: 50, y: 50 } }
     ];
 
     this.stops = [...this.defaultStops];
     this.selectedStop = null;
     this.draggingStop = null;
     this.saveTimeout = null;
+
+    // Image dragging state
+    this.isDraggingImage = false;
+    this.dragStartX = 0;
+    this.dragStartY = 0;
+    this.startPosX = 50;
+    this.startPosY = 50;
 
     this.init();
   }
@@ -388,7 +415,16 @@ class ThresholdEditor {
     // Label input
     this.stopLabelInput.addEventListener('input', (e) => this.onLabelChange(e));
 
-    // Mouse move/up for dragging
+    // Fit mode buttons
+    this.fitCoverBtn.addEventListener('click', () => this.setFitMode('cover'));
+    this.fitContainBtn.addEventListener('click', () => this.setFitMode('contain'));
+
+    // Image preview drag to reposition
+    this.stopImagePreview.addEventListener('mousedown', (e) => this.onImageDragStart(e));
+    document.addEventListener('mousemove', (e) => this.onImageDragMove(e));
+    document.addEventListener('mouseup', () => this.onImageDragEnd());
+
+    // Mouse move/up for dragging threshold stops
     document.addEventListener('mousemove', (e) => this.onMouseMove(e));
     document.addEventListener('mouseup', () => this.onMouseUp());
 
@@ -401,7 +437,14 @@ class ThresholdEditor {
     try {
       const config = await window.electronAPI.loadConfig();
       if (config && config.levels && config.levels.length > 0) {
-        this.stops = config.levels;
+        // Ensure each stop has the new fitMode and position fields
+        this.stops = config.levels.map(level => ({
+          threshold: level.threshold,
+          image: level.image,
+          label: level.label,
+          fitMode: level.fitMode || 'cover',
+          position: level.position || { x: 50, y: 50 }
+        }));
         console.log('Loaded config with', this.stops.length, 'levels');
       }
     } catch (err) {
@@ -420,7 +463,9 @@ class ThresholdEditor {
           levels: this.stops.map(s => ({
             threshold: s.threshold,
             image: s.image,
-            label: s.label
+            label: s.label,
+            fitMode: s.fitMode || 'cover',
+            position: s.position || { x: 50, y: 50 }
           }))
         };
         await window.electronAPI.saveConfig(config);
@@ -446,7 +491,9 @@ class ThresholdEditor {
     this.stops.push({
       threshold: percentage,
       image: null,
-      label: `Level ${percentage}%`
+      label: `Level ${percentage}%`,
+      fitMode: 'cover',
+      position: { x: 50, y: 50 }
     });
 
     this.stops.sort((a, b) => a.threshold - b.threshold);
@@ -495,15 +542,31 @@ class ThresholdEditor {
     this.stopPercentage.textContent = stop.threshold;
     this.stopLabelInput.value = stop.label;
 
+    // Update fit mode buttons
+    const fitMode = stop.fitMode || 'cover';
+    this.fitCoverBtn.classList.toggle('active', fitMode === 'cover');
+    this.fitContainBtn.classList.toggle('active', fitMode === 'contain');
+
+    // Update image preview
+    this.updateImagePreview(stop);
+
+    this.renderStops();
+  }
+
+  updateImagePreview(stop) {
     if (stop.image) {
+      const fitMode = stop.fitMode || 'cover';
+      const pos = stop.position || { x: 50, y: 50 };
       this.stopImagePreview.style.backgroundImage = `url('${stop.image}')`;
+      this.stopImagePreview.style.backgroundSize = fitMode;
+      this.stopImagePreview.style.backgroundPosition = `${pos.x}% ${pos.y}%`;
       this.stopImagePreview.innerHTML = '';
     } else {
       this.stopImagePreview.style.backgroundImage = 'none';
+      this.stopImagePreview.style.backgroundSize = 'cover';
+      this.stopImagePreview.style.backgroundPosition = 'center';
       this.stopImagePreview.innerHTML = '<span>No image</span>';
     }
-
-    this.renderStops();
   }
 
   removeStop(index) {
@@ -567,9 +630,10 @@ class ThresholdEditor {
 
     const reader = new FileReader();
     reader.onload = (event) => {
-      this.stops[this.selectedStop].image = event.target.result;
-      this.stopImagePreview.style.backgroundImage = `url('${event.target.result}')`;
-      this.stopImagePreview.innerHTML = '';
+      const stop = this.stops[this.selectedStop];
+      stop.image = event.target.result;
+      stop.position = { x: 50, y: 50 }; // Reset position for new image
+      this.updateImagePreview(stop);
       this.renderStops();
       this.renderLevelsList();
       this.syncToTeacherDisplay();
@@ -580,13 +644,75 @@ class ThresholdEditor {
 
   removeImage() {
     if (this.selectedStop === null) return;
-    this.stops[this.selectedStop].image = null;
-    this.stopImagePreview.style.backgroundImage = 'none';
-    this.stopImagePreview.innerHTML = '<span>No image</span>';
+    const stop = this.stops[this.selectedStop];
+    stop.image = null;
+    stop.position = { x: 50, y: 50 };
+    this.updateImagePreview(stop);
     this.renderStops();
     this.renderLevelsList();
     this.syncToTeacherDisplay();
     this.saveConfig();
+  }
+
+  setFitMode(mode) {
+    if (this.selectedStop === null) return;
+    const stop = this.stops[this.selectedStop];
+    stop.fitMode = mode;
+
+    // Update button states
+    this.fitCoverBtn.classList.toggle('active', mode === 'cover');
+    this.fitContainBtn.classList.toggle('active', mode === 'contain');
+
+    this.updateImagePreview(stop);
+    this.syncToTeacherDisplay();
+    this.saveConfig();
+  }
+
+  onImageDragStart(e) {
+    if (this.selectedStop === null) return;
+    const stop = this.stops[this.selectedStop];
+    if (!stop.image) return;
+
+    // Only drag in 'cover' mode where position matters
+    if (stop.fitMode !== 'cover') return;
+
+    e.preventDefault();
+    this.isDraggingImage = true;
+    this.dragStartX = e.clientX;
+    this.dragStartY = e.clientY;
+    this.startPosX = stop.position?.x ?? 50;
+    this.startPosY = stop.position?.y ?? 50;
+    this.stopImagePreview.style.cursor = 'grabbing';
+  }
+
+  onImageDragMove(e) {
+    if (!this.isDraggingImage || this.selectedStop === null) return;
+
+    const stop = this.stops[this.selectedStop];
+    const previewRect = this.stopImagePreview.getBoundingClientRect();
+
+    // Calculate movement as percentage of preview size
+    const deltaX = ((e.clientX - this.dragStartX) / previewRect.width) * 100;
+    const deltaY = ((e.clientY - this.dragStartY) / previewRect.height) * 100;
+
+    // Update position (inverted because we're moving the background)
+    const newX = Math.max(0, Math.min(100, this.startPosX - deltaX));
+    const newY = Math.max(0, Math.min(100, this.startPosY - deltaY));
+
+    stop.position = { x: newX, y: newY };
+    this.stopImagePreview.style.backgroundPosition = `${newX}% ${newY}%`;
+  }
+
+  onImageDragEnd() {
+    if (!this.isDraggingImage) return;
+
+    this.isDraggingImage = false;
+    this.stopImagePreview.style.cursor = 'move';
+
+    if (this.selectedStop !== null) {
+      this.syncToTeacherDisplay();
+      this.saveConfig();
+    }
   }
 
   onLabelChange(e) {
@@ -618,7 +744,9 @@ class ThresholdEditor {
     this.teacherDisplay.levels = this.stops.map(s => ({
       threshold: s.threshold,
       image: s.image,
-      label: s.label
+      label: s.label,
+      fitMode: s.fitMode || 'cover',
+      position: s.position || { x: 50, y: 50 }
     }));
   }
 }
