@@ -5,6 +5,8 @@
   "main": "src/main.js",
   "scripts": {
     "start": "electron .",
+    "build": "electron-builder",
+    "build:win": "electron-builder --win",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -19,10 +21,32 @@
   },
   "homepage": "https://github.com/Mumblinmad/ChattyCathy#readme",
   "dependencies": {
-    "better-sqlite3": "^12.5.0"
+    "better-sqlite3": "^12.5.0",
+    "d3": "^7.9.0"
   },
   "devDependencies": {
     "electron": "39.2.7",
+    "electron-builder": "^25.1.8",
     "electron-rebuild": "^3.2.9"
+  },
+  "build": {
+    "appId": "com.chattycathy.app",
+    "productName": "Chatty Cathy",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "src/**/*",
+      "node_modules/d3/**/*",
+      "node_modules/d3-*/**/*"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "build/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    }
   }
 }
