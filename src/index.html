@@ -3,9 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; media-src 'self' mediastream:">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://d3js.org; media-src 'self' mediastream:; img-src 'self' data: blob:">
   <title>Chatty Cathy - Classroom Noise Monitor</title>
   <link rel="stylesheet" href="styles.css">
+  <script src="https://d3js.org/d3.v7.min.js"></script>
 </head>
 <body>
   <!-- Main Screen -->
@@ -29,6 +30,12 @@
           <p>Classroom Noise Monitor</p>
         </div>
         <div class="controls-section">
+          <div class="class-selector">
+            <label for="classSelect">Class:</label>
+            <select id="classSelect">
+              <option value="">-- Select Class --</option>
+            </select>
+          </div>
           <div class="mic-selector">
             <label for="micSelect">Microphone:</label>
             <select id="micSelect"></select>
@@ -56,15 +63,103 @@
       <nav class="settings-sidebar">
         <button class="sidebar-btn active" data-panel="classes">Classes</button>
         <button class="sidebar-btn" data-panel="levels">Levels</button>
+        <button class="sidebar-btn" data-panel="statistics">Statistics</button>
       </nav>
       <div class="settings-content">
         <div id="classesPanel" class="settings-panel active">
           <h2>Classes</h2>
-          <p>Configure your classes here.</p>
+          <p class="panel-description">Add and manage your classroom classes for tracking noise levels.</p>
+
+          <div class="class-form">
+            <input type="text" id="newClassName" placeholder="Enter class name (e.g., Period 1 - Math)">
+            <button id="addClassBtn" class="add-btn">Add Class</button>
+          </div>
+
+          <div class="classes-list" id="classesList"></div>
         </div>
         <div id="levelsPanel" class="settings-panel">
           <h2>Levels</h2>
-          <p>Configure noise levels here.</p>
+          <p class="levels-description">Click on the bar to add a threshold. Drag stops to adjust. Right-click to remove.</p>
+
+          <div class="threshold-editor">
+            <div class="threshold-bar" id="thresholdBar">
+              <div class="threshold-gradient"></div>
+              <div class="threshold-stops" id="thresholdStops"></div>
+            </div>
+            <div class="threshold-labels">
+              <span>0%</span>
+              <span>25%</span>
+              <span>50%</span>
+              <span>75%</span>
+              <span>100%</span>
+            </div>
+          </div>
+
+          <div class="stop-editor" id="stopEditor" style="display: none;">
+            <h3>Edit Threshold: <span id="stopPercentage">0</span>%</h3>
+            <div class="stop-image-section">
+              <div class="stop-image-preview" id="stopImagePreview">
+                <span>No image</span>
+              </div>
+              <div class="stop-image-controls">
+                <label class="upload-btn">
+                  Choose Image
+                  <input type="file" id="stopImageInput" accept="image/*" hidden>
+                </label>
+                <button id="removeImageBtn" class="remove-btn">Remove Image</button>
+              </div>
+            </div>
+            <div class="stop-label-section">
+              <label for="stopLabelInput">Label:</label>
+              <input type="text" id="stopLabelInput" placeholder="e.g., Quiet, Loud, etc.">
+            </div>
+          </div>
+
+          <div class="levels-list" id="levelsList"></div>
+        </div>
+        <div id="statisticsPanel" class="settings-panel">
+          <h2>Statistics</h2>
+          <p class="panel-description">View noise level trends over time for your classes.</p>
+
+          <div class="stats-controls">
+            <div class="stats-class-selector">
+              <label for="statsClassSelect">Class:</label>
+              <select id="statsClassSelect">
+                <option value="">-- Select Class --</option>
+              </select>
+            </div>
+            <div class="stats-time-range">
+              <label for="statsTimeRange">Time Range:</label>
+              <select id="statsTimeRange">
+                <option value="hour">Last Hour</option>
+                <option value="day" selected>Last 24 Hours</option>
+                <option value="week">Last Week</option>
+                <option value="month">Last Month</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="stats-chart-container">
+            <div id="statsChart" class="stats-chart"></div>
+            <div id="statsNoData" class="stats-no-data">
+              <p>Select a class to view statistics</p>
+            </div>
+          </div>
+
+          <div class="stats-summary" id="statsSummary">
+            <div class="stats-summary-item">
+              <span class="stats-label">Average Level</span>
+              <span class="stats-value" id="statsAvg">--</span>
+            </div>
+            <div class="stats-summary-item">
+              <span class="stats-label">Peak Level</span>
+              <span class="stats-value" id="statsPeak">--</span>
+            </div>
+            <div class="stats-summary-item">
+              <span class="stats-label">Samples</span>
+              <span class="stats-value" id="statsSampleCount">--</span>
+            </div>
+          </div>
         </div>
       </div>
     </div>

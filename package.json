@@ -18,7 +18,11 @@
     "url": "https://github.com/Mumblinmad/ChattyCathy/issues"
   },
   "homepage": "https://github.com/Mumblinmad/ChattyCathy#readme",
+  "dependencies": {
+    "better-sqlite3": "^12.5.0"
+  },
   "devDependencies": {
-    "electron": "39.2.7"
+    "electron": "39.2.7",
+    "electron-rebuild": "^3.2.9"
   }
 }
