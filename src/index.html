@@ -142,6 +142,185 @@
                 <option value="month">Last Month</option>
               </select>
             </div>
+            <div class="stats-explanations-toggle">
+              <button id="toggleExplanations" class="toggle-btn" title="Toggle explanations">
+                <span class="toggle-icon">ℹ️</span>
+                <span class="toggle-text">Show Explanations</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- All-Time Records Card -->
+          <div class="stats-all-time-card" id="statsAllTimeCard">
+            <h3>All-Time Records</h3>
+            <div class="all-time-stats-grid">
+              <div class="all-time-stat">
+                <span class="stat-label">Longest Time at Highest</span>
+                <span class="stat-value" id="statsAllTimePeak">--</span>
+                <span class="stat-date" id="statsAllTimePeakDate">--</span>
+                <div class="stat-explanation explanation-hidden">
+                  The longest continuous period where noise levels stayed at or near the highest recorded volume. This shows how long the class remained at peak noise levels.
+                </div>
+              </div>
+              <div class="all-time-stat">
+                <span class="stat-label">Longest Time at Lowest</span>
+                <span class="stat-value" id="statsAllTimeMin">--</span>
+                <span class="stat-date" id="statsAllTimeMinDate">--</span>
+                <div class="stat-explanation explanation-hidden">
+                  The longest continuous period where noise levels stayed at or near the lowest recorded volume. This shows how long the class remained quietest.
+                </div>
+              </div>
+              <div class="all-time-stat">
+                <span class="stat-label">All-Time Average</span>
+                <span class="stat-value" id="statsAllTimeAvg">--</span>
+                <div class="stat-explanation explanation-hidden">
+                  The average noise level across all recorded samples for this class. This gives you the overall "typical" volume level.
+                </div>
+                <div class="volatility-formula explanation-hidden">
+                  <div class="formula-container">
+                    <span class="formula-main">μ =</span>
+                    <span class="formula-fraction">
+                      <span class="formula-numerator">Σx</span>
+                      <span class="formula-divider"></span>
+                      <span class="formula-denominator">n</span>
+                    </span>
+                  </div>
+                  <div class="formula-variables">
+                    <div class="variable-item">
+                      <span class="variable-symbol">μ</span>
+                      <span class="variable-label">= Mean (average) noise level</span>
+                    </div>
+                    <div class="variable-item">
+                      <span class="variable-symbol">x</span>
+                      <span class="variable-label">= Each noise level measurement</span>
+                    </div>
+                    <div class="variable-item">
+                      <span class="variable-symbol">n</span>
+                      <span class="variable-label">= Total number of samples</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Time-Based Statistics Section -->
+          <div class="stats-time-based" id="statsTimeBased">
+            <h3>Session-Based Time Analysis</h3>
+            <div class="time-stats-grid">
+              <div class="time-stat-card">
+                <span class="time-label">Average Quietest Time</span>
+                <span class="time-value" id="statsQuietestHour">--</span>
+                <span class="time-avg" id="statsQuietestHourAvg">--</span>
+                <div class="stat-explanation explanation-hidden">
+                  The average time of day (across all monitoring sessions) when the class is typically quietest. Useful for identifying when students are most focused.
+                </div>
+                <div class="volatility-formula explanation-hidden">
+                  <div class="formula-container">
+                    <span class="formula-main">avg_time = mean(time₁, time₂, ..., timeₙ)</span>
+                  </div>
+                </div>
+              </div>
+              <div class="time-stat-card">
+                <span class="time-label">Average Loudest Time</span>
+                <span class="time-value" id="statsLoudestHour">--</span>
+                <span class="time-avg" id="statsLoudestHourAvg">--</span>
+                <div class="stat-explanation explanation-hidden">
+                  The average time of day (across all monitoring sessions) when the class is typically loudest. Helps identify when noise levels peak.
+                </div>
+                <div class="volatility-formula explanation-hidden">
+                  <div class="formula-container">
+                    <span class="formula-main">avg_time = mean(time₁, time₂, ..., timeₙ)</span>
+                  </div>
+                </div>
+              </div>
+              <div class="time-stat-card">
+                <span class="time-label">Session Pattern</span>
+                <span class="time-value" id="statsQuietestDay">--</span>
+                <span class="time-avg" id="statsQuietestDayAvg">--</span>
+                <div class="stat-explanation explanation-hidden">
+                  The pattern of days when monitoring sessions occur (e.g., MWF for Monday/Wednesday/Friday, TTh for Tuesday/Thursday). Shows your class schedule.
+                </div>
+              </div>
+              <div class="time-stat-card">
+                <span class="time-label">Sessions Analyzed</span>
+                <span class="time-value" id="statsLoudestDay">--</span>
+                <span class="time-avg" id="statsLoudestDayAvg">--</span>
+                <div class="stat-explanation explanation-hidden">
+                  The number of distinct monitoring sessions detected. Sessions are identified by continuous monitoring periods with gaps of 5+ minutes between them.
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Trend Analysis Section -->
+          <div class="stats-trend-analysis" id="statsTrendAnalysis">
+            <h3>Trend Analysis</h3>
+            <div class="trend-stats-grid">
+              <div class="trend-stat">
+                <span class="trend-label">Overall Trend</span>
+                <span class="trend-value" id="statsTrendDirection">--</span>
+                <span class="trend-change" id="statsTrendChange">--</span>
+                <div class="stat-explanation explanation-hidden">
+                  Shows whether noise levels are increasing, decreasing, or staying stable over the selected time period. Calculated by comparing the first half to the second half of the period.
+                </div>
+                <div class="volatility-formula explanation-hidden">
+                  <div class="formula-container" style="flex-direction: column; align-items: flex-start; gap: 0.25rem;">
+                    <span class="formula-main">% change =</span>
+                    <span class="formula-main">(secondHalfAvg - firstHalfAvg)</span>
+                    <span class="formula-main">/ firstHalfAvg</span>
+                    <span class="formula-main">× 100</span>
+                  </div>
+                </div>
+              </div>
+              <div class="trend-stat">
+                <span class="trend-label">Volatility</span>
+                <span class="trend-value" id="statsVolatility">--</span>
+                <span class="trend-stddev" id="statsStdDev">--</span>
+                <div class="volatility-formula explanation-hidden" id="statsVolatilityFormula">
+                  <div class="formula-container">
+                    <span class="formula-main">σ = √</span>
+                    <span class="formula-fraction">
+                      <span class="formula-numerator">Σ(x - μ)²</span>
+                      <span class="formula-divider"></span>
+                      <span class="formula-denominator">n</span>
+                    </span>
+                  </div>
+                  <div class="formula-variables">
+                    <div class="variable-item">
+                      <span class="variable-symbol">σ</span>
+                      <span class="variable-label">= Standard Deviation (volatility)</span>
+                    </div>
+                    <div class="variable-item">
+                      <span class="variable-symbol">x</span>
+                      <span class="variable-label">= Each noise level measurement</span>
+                    </div>
+                    <div class="variable-item">
+                      <span class="variable-symbol">μ</span>
+                      <span class="variable-label">= Average noise level</span>
+                    </div>
+                    <div class="variable-item">
+                      <span class="variable-symbol">n</span>
+                      <span class="variable-label">= Total number of measurements</span>
+                    </div>
+                  </div>
+                  <div class="formula-description">
+                    Measures how much noise levels vary from the average. Lower values mean steadier volume, higher values mean more fluctuation.
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Class Ranking (Comparison) -->
+          <div class="stats-comparison-container" id="statsComparisonContainer">
+            <h3>Class Quietness Ranking</h3>
+            <div id="statsComparisonChart" class="stats-comparison-chart">
+              <div class="no-comparison-data">No comparison data available<br/><span style="font-size: 0.9rem; color: #666;">Select a class to view ranking</span></div>
+            </div>
+            <div class="stat-explanation explanation-hidden">
+              Ranks all classes by their average quietness (lower average volume = quieter = better rank). The selected class is highlighted. Classes are sorted from quietest (rank 1) to loudest.
+            </div>
           </div>
 
           <div class="stats-chart-container">
@@ -155,14 +334,148 @@
             <div class="stats-summary-item">
               <span class="stats-label">Average Level</span>
               <span class="stats-value" id="statsAvg">--</span>
+              <span class="stats-unit">(0-100%)</span>
+              <div class="stat-explanation explanation-hidden">
+                The mean (average) noise level across all samples in the selected time range. Formula: (sum of all levels) ÷ (number of samples).
+              </div>
+              <div class="volatility-formula explanation-hidden">
+                <div class="formula-container">
+                  <span class="formula-main">μ =</span>
+                  <span class="formula-fraction">
+                    <span class="formula-numerator">Σx</span>
+                    <span class="formula-divider"></span>
+                    <span class="formula-denominator">n</span>
+                  </span>
+                </div>
+                <div class="formula-variables">
+                  <div class="variable-item">
+                    <span class="variable-symbol">μ</span>
+                    <span class="variable-label">= Mean (average) noise level</span>
+                  </div>
+                  <div class="variable-item">
+                    <span class="variable-symbol">x</span>
+                    <span class="variable-label">= Each noise level measurement</span>
+                  </div>
+                  <div class="variable-item">
+                    <span class="variable-symbol">n</span>
+                    <span class="variable-label">= Total number of samples</span>
+                  </div>
+                </div>
+              </div>
             </div>
             <div class="stats-summary-item">
               <span class="stats-label">Peak Level</span>
               <span class="stats-value" id="statsPeak">--</span>
+              <span class="stats-unit">(0-100%)</span>
+              <div class="stat-explanation explanation-hidden">
+                The highest single noise level measurement recorded during the selected time period. Shows the maximum volume reached.
+              </div>
+              <div class="volatility-formula explanation-hidden">
+                <div class="formula-container">
+                  <span class="formula-main">max = MAX(x₁, x₂, ..., xₙ)</span>
+                </div>
+                <div class="formula-variables">
+                  <div class="variable-item">
+                    <span class="variable-symbol">max</span>
+                    <span class="variable-label">= Maximum noise level</span>
+                  </div>
+                  <div class="variable-item">
+                    <span class="variable-symbol">x₁, x₂, ..., xₙ</span>
+                    <span class="variable-label">= All noise level measurements</span>
+                  </div>
+                </div>
+              </div>
             </div>
             <div class="stats-summary-item">
               <span class="stats-label">Samples</span>
               <span class="stats-value" id="statsSampleCount">--</span>
+              <span class="stats-unit">(count)</span>
+              <div class="stat-explanation explanation-hidden">
+                The total number of noise level measurements collected during the selected time range. More samples provide more accurate statistics.
+              </div>
+            </div>
+          </div>
+
+          <!-- Additional Statistics Cards -->
+          <div class="stats-additional" id="statsAdditional">
+            <div class="stats-additional-grid">
+              <div class="stats-additional-card stress-card">
+                <span class="additional-label">Teacher Stress Score</span>
+                <span class="additional-value" id="statsStressScore">--</span>
+                <span class="additional-unit">(0-1400, based on most recent day's average volume)</span>
+                <span class="additional-description" id="statsStressDescription">--</span>
+                <div class="stat-explanation explanation-hidden">
+                  A fun, arbitrary score that maps the most recent day's average volume to a 0-1400 scale. Formula: (average volume) × 14. Higher volume = higher stress score. Not scientifically validated, just for fun!
+                </div>
+                <div class="volatility-formula explanation-hidden">
+                  <div class="formula-container">
+                    <span class="formula-main">stress = avgVolume × 14</span>
+                  </div>
+                  <div class="formula-variables">
+                    <div class="variable-item">
+                      <span class="variable-symbol">stress</span>
+                      <span class="variable-label">= Teacher Stress Score (0-1400)</span>
+                    </div>
+                    <div class="variable-item">
+                      <span class="variable-symbol">avgVolume</span>
+                      <span class="variable-label">= Average volume of most recent day (0-100%)</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="stats-additional-card">
+                <span class="additional-label">Total Monitoring Time</span>
+                <span class="additional-value" id="statsTotalTime">--</span>
+                <span class="additional-unit">(hours:minutes)</span>
+                <div class="stat-explanation explanation-hidden">
+                  The total amount of time this class has been monitored, calculated from the first sample to the last sample. Shows how much data has been collected.
+                </div>
+              </div>
+              <div class="stats-additional-card">
+                <span class="additional-label">Noise Range</span>
+                <span class="additional-value" id="statsNoiseRange">--</span>
+                <span class="additional-unit">(min-max spread in %)</span>
+                <div class="stat-explanation explanation-hidden">
+                  The difference between the highest and lowest noise levels recorded. Formula: (maximum level) - (minimum level). Shows the full span of volume variation.
+                </div>
+                <div class="volatility-formula explanation-hidden">
+                  <div class="formula-container">
+                    <span class="formula-main">range = max - min</span>
+                  </div>
+                  <div class="formula-variables">
+                    <div class="variable-item">
+                      <span class="variable-symbol">range</span>
+                      <span class="variable-label">= Noise range (spread)</span>
+                    </div>
+                    <div class="variable-item">
+                      <span class="variable-symbol">max</span>
+                      <span class="variable-label">= Maximum noise level</span>
+                    </div>
+                    <div class="variable-item">
+                      <span class="variable-symbol">min</span>
+                      <span class="variable-label">= Minimum noise level</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="stats-additional-card">
+                <span class="additional-label">Average Session Duration</span>
+                <span class="additional-value" id="statsAvgSessionDuration">--</span>
+                <span class="additional-unit">(minutes)</span>
+                <div class="stat-explanation explanation-hidden">
+                  The average length of monitoring sessions for this class. Sessions are continuous monitoring periods (gaps of 5+ minutes create new sessions). Formula: (sum of session durations) ÷ (number of sessions).
+                </div>
+                <div class="volatility-formula explanation-hidden">
+                  <div class="formula-container">
+                    <span class="formula-main">avg =</span>
+                    <span class="formula-fraction">
+                      <span class="formula-numerator">Σd</span>
+                      <span class="formula-divider"></span>
+                      <span class="formula-denominator">n</span>
+                    </span>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>

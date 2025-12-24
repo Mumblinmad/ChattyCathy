@@ -25,7 +25,19 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getSampleStats: (classId, startTime, endTime) => ipcRenderer.invoke('sample-stats', classId, startTime, endTime),
   getHourlyAverages: (classId, startTime, endTime) => ipcRenderer.invoke('sample-hourly', classId, startTime, endTime),
   getDailyAverages: (classId, startTime, endTime) => ipcRenderer.invoke('sample-daily', classId, startTime, endTime),
-  getSampleCount: (classId) => ipcRenderer.invoke('sample-count', classId)
+  getSampleCount: (classId) => ipcRenderer.invoke('sample-count', classId),
+  getClassSampleInfo: (classId) => ipcRenderer.invoke('class-sample-info', classId),
+  
+  // Advanced statistics operations
+  getAllTimeStats: (classId) => ipcRenderer.invoke('stats-all-time', classId),
+  getLongestDurationAtHighest: (classId) => ipcRenderer.invoke('stats-longest-highest', classId),
+  getLongestDurationAtLowest: (classId) => ipcRenderer.invoke('stats-longest-lowest', classId),
+  getTimeBasedStats: (classId, startTime, endTime) => ipcRenderer.invoke('stats-time-based', classId, startTime, endTime),
+  getTrendAnalysis: (classId, startTime, endTime) => ipcRenderer.invoke('stats-trend', classId, startTime, endTime),
+  getVolatility: (classId, startTime, endTime) => ipcRenderer.invoke('stats-volatility', classId, startTime, endTime),
+  getClassesAverages: (startTime, endTime) => ipcRenderer.invoke('classes-averages', startTime, endTime),
+  getSessionBasedTimeAnalysis: (classId, startTime, endTime) => ipcRenderer.invoke('stats-session-analysis', classId, startTime, endTime),
+  getMostRecentDayAverage: (classId) => ipcRenderer.invoke('stats-most-recent-day', classId)
 });
 
 console.log('Preload script loaded');

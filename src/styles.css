@@ -825,7 +825,8 @@ p {
 }
 
 .stats-class-selector,
-.stats-time-range {
+.stats-time-range,
+.stats-explanations-toggle {
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -853,6 +854,77 @@ p {
 .stats-time-range select:focus {
   outline: none;
   border-color: #00d4ff;
+}
+
+/* Toggle Button */
+.toggle-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background-color: #1a1a2e;
+  color: #eaeaea;
+  border: 2px solid #333;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+}
+
+.toggle-btn:hover {
+  border-color: #00d4ff;
+  background-color: #0d0d1a;
+}
+
+.toggle-btn.active {
+  border-color: #00d4ff;
+  background-color: #0d0d1a;
+  color: #00d4ff;
+}
+
+.toggle-icon {
+  font-size: 1.1rem;
+}
+
+.toggle-text {
+  font-size: 0.9rem;
+}
+
+/* Stat Explanations */
+.stat-explanation {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid #333;
+  color: #aaa;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  font-style: italic;
+  transition: all 0.3s ease;
+}
+
+.stat-explanation.explanation-hidden {
+  display: none;
+}
+
+.stat-explanation:not(.explanation-hidden) {
+  display: block;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Volatility formula should also be toggled */
+.volatility-formula.explanation-hidden {
+  display: none;
 }
 
 .stats-chart-container {
@@ -891,6 +963,7 @@ p {
 .stats-summary {
   display: flex;
   gap: 2rem;
+  margin-bottom: 2rem;
 }
 
 .stats-summary-item {
@@ -900,13 +973,16 @@ p {
   border-radius: 8px;
   padding: 1.5rem;
   text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
 }
 
 .stats-label {
   display: block;
   color: #888;
   font-size: 0.9rem;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0;
 }
 
 .stats-value {
@@ -914,6 +990,82 @@ p {
   color: #00d4ff;
   font-size: 2rem;
   font-weight: bold;
+}
+
+.stats-unit {
+  display: block;
+  color: #666;
+  font-size: 0.75rem;
+  font-style: italic;
+}
+
+/* Additional Statistics */
+.stats-additional {
+  margin-top: 2rem;
+}
+
+.stats-additional-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+}
+
+.stats-additional-card {
+  background-color: #0d0d1a;
+  border: 2px solid #333;
+  border-radius: 8px;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  transition: border-color 0.3s ease;
+}
+
+.stats-additional-card:hover {
+  border-color: #00d4ff;
+}
+
+.stats-additional-card.stress-card {
+  border-color: #ff6b6b;
+  background: linear-gradient(135deg, rgba(255, 107, 107, 0.05) 0%, rgba(255, 107, 107, 0.02) 100%);
+}
+
+.stats-additional-card.stress-card:hover {
+  border-color: #ff4444;
+  box-shadow: 0 0 15px rgba(255, 107, 107, 0.2);
+}
+
+.additional-label {
+  color: #888;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+}
+
+.additional-value {
+  color: #eaeaea;
+  font-size: 2.5rem;
+  font-weight: bold;
+}
+
+.stats-additional-card.stress-card .additional-value {
+  color: #ff6b6b;
+  font-size: 3rem;
+}
+
+.additional-unit {
+  color: #666;
+  font-size: 0.8rem;
+  font-style: italic;
+  line-height: 1.4;
+}
+
+.additional-description {
+  color: #00d4ff;
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-top: 0.5rem;
 }
 
 /* D3 Chart Styles */
@@ -961,4 +1113,296 @@ p {
   font-size: 0.85rem;
   pointer-events: none;
   z-index: 100;
+}
+
+/* All-Time Records Card */
+.stats-all-time-card {
+  background-color: #0d0d1a;
+  border: 2px solid #333;
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.stats-all-time-card h3 {
+  margin-bottom: 1rem;
+  color: #eaeaea;
+  font-size: 1.2rem;
+}
+
+.all-time-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.5rem;
+}
+
+.all-time-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.all-time-stat .stat-label {
+  color: #888;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.all-time-stat .stat-value {
+  color: #00d4ff;
+  font-size: 2rem;
+  font-weight: bold;
+}
+
+.all-time-stat .stat-date {
+  color: #666;
+  font-size: 0.85rem;
+}
+
+/* Time-Based Statistics */
+.stats-time-based {
+  background-color: #0d0d1a;
+  border: 2px solid #333;
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.stats-time-based h3 {
+  margin-bottom: 1rem;
+  color: #eaeaea;
+  font-size: 1.2rem;
+}
+
+.time-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.time-stat-card {
+  background-color: #1a1a2e;
+  border: 2px solid #333;
+  border-radius: 6px;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  transition: border-color 0.3s ease;
+}
+
+.time-stat-card:hover {
+  border-color: #00d4ff;
+}
+
+.time-stat-card .time-label {
+  color: #888;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.time-stat-card .time-value {
+  color: #eaeaea;
+  font-size: 1.2rem;
+  font-weight: bold;
+}
+
+.time-stat-card .time-avg {
+  color: #00d4ff;
+  font-size: 1rem;
+}
+
+/* Trend Analysis */
+.stats-trend-analysis {
+  background-color: #0d0d1a;
+  border: 2px solid #333;
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.stats-trend-analysis h3 {
+  margin-bottom: 1rem;
+  color: #eaeaea;
+  font-size: 1.2rem;
+}
+
+.trend-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+}
+
+.trend-stat {
+  background-color: #1a1a2e;
+  border: 2px solid #333;
+  border-radius: 6px;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.trend-stat .trend-label {
+  color: #888;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.trend-stat .trend-value {
+  color: #eaeaea;
+  font-size: 1.8rem;
+  font-weight: bold;
+}
+
+.trend-stat .trend-change {
+  color: #888;
+  font-size: 1rem;
+}
+
+.trend-stat .trend-stddev {
+  color: #888;
+  font-size: 0.9rem;
+}
+
+/* Volatility Formula */
+.volatility-formula {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #333;
+}
+
+.formula-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  font-size: 1.2rem;
+  color: #00d4ff;
+}
+
+.formula-main {
+  font-weight: bold;
+}
+
+.formula-fraction {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.formula-numerator {
+  padding: 0.25rem 0.5rem;
+  border-bottom: 2px solid #00d4ff;
+}
+
+.formula-divider {
+  height: 2px;
+  width: 100%;
+  background-color: #00d4ff;
+}
+
+.formula-denominator {
+  padding: 0.25rem 0.5rem;
+}
+
+.formula-variables {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.variable-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+}
+
+.variable-symbol {
+  color: #00d4ff;
+  font-weight: bold;
+  font-size: 1.1rem;
+  min-width: 1.5rem;
+  text-align: center;
+  font-style: italic;
+}
+
+.variable-label {
+  color: #aaa;
+}
+
+.formula-description {
+  color: #888;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  font-style: italic;
+  text-align: center;
+  padding-top: 0.5rem;
+  border-top: 1px solid #333;
+}
+
+/* Class Comparison Chart */
+.stats-comparison-container {
+  background-color: #0d0d1a;
+  border: 2px solid #333;
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.stats-comparison-container h3 {
+  margin-bottom: 1rem;
+  color: #eaeaea;
+  font-size: 1.2rem;
+}
+
+.stats-comparison-chart {
+  width: 100%;
+  min-height: 300px;
+}
+
+.stats-comparison-chart .bar {
+  transition: opacity 0.2s ease;
+}
+
+.stats-comparison-chart .axis path,
+.stats-comparison-chart .axis line {
+  stroke: #444;
+}
+
+.stats-comparison-chart .axis text {
+  fill: #888;
+  font-size: 11px;
+}
+
+.no-comparison-data {
+  text-align: center;
+  color: #666;
+  padding: 3rem 2rem;
+  font-size: 1rem;
+  line-height: 1.6;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .all-time-stats-grid,
+  .time-stats-grid,
+  .trend-stats-grid,
+  .stats-additional-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .stats-summary {
+    flex-direction: column;
+  }
+  
+  .stats-additional-card.stress-card .additional-value {
+    font-size: 2.5rem;
+  }
 }

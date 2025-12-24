@@ -173,6 +173,51 @@ app.whenReady().then(() => {
     return db.getSampleCount(classId);
   });
 
+  ipcMain.handle('class-sample-info', (event, classId) => {
+    return db.getClassSampleInfo(classId);
+  });
+
+  // ============ Advanced Statistics IPC Handlers ============
+  ipcMain.handle('stats-all-time', (event, classId) => {
+    return db.getAllTimeStats(classId);
+  });
+
+  ipcMain.handle('stats-longest-highest', (event, classId) => {
+    return db.getLongestDurationAtHighest(classId);
+  });
+
+  ipcMain.handle('stats-longest-lowest', (event, classId) => {
+    return db.getLongestDurationAtLowest(classId);
+  });
+
+  ipcMain.handle('stats-time-based', (event, classId, startTime, endTime) => {
+    return {
+      hour: db.getQuietestLoudestHour(classId, startTime, endTime),
+      day: db.getQuietestLoudestDay(classId, startTime, endTime),
+      week: db.getQuietestLoudestWeek(classId, startTime, endTime)
+    };
+  });
+
+  ipcMain.handle('stats-trend', (event, classId, startTime, endTime) => {
+    return db.getTrendAnalysis(classId, startTime, endTime);
+  });
+
+  ipcMain.handle('stats-volatility', (event, classId, startTime, endTime) => {
+    return db.getVolatility(classId, startTime, endTime);
+  });
+
+  ipcMain.handle('classes-averages', (event, startTime, endTime) => {
+    return db.getAllClassesAverages(startTime, endTime);
+  });
+
+  ipcMain.handle('stats-session-analysis', (event, classId, startTime, endTime) => {
+    return db.getSessionBasedTimeAnalysis(classId, startTime, endTime);
+  });
+
+  ipcMain.handle('stats-most-recent-day', (event, classId) => {
+    return db.getMostRecentDayAverage(classId);
+  });
+
   // IPC Handlers for config persistence
   ipcMain.handle('load-config', () => {
     const config = loadConfig();

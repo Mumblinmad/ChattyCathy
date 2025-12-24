@@ -866,12 +866,25 @@ class ClassManager {
       const item = document.createElement('div');
       item.className = 'class-item';
 
-      // Get sample count for stats
+      // Get sample count and info for stats
       let sampleCount = 0;
+      let samplingRate = null;
       try {
-        sampleCount = await window.electronAPI.getSampleCount(cls.id);
+        const sampleInfo = await window.electronAPI.getClassSampleInfo(cls.id);
+        if (sampleInfo && sampleInfo.count > 0) {
+          sampleCount = sampleInfo.count;
+          // Calculate sampling rate if we have time range
+          if (sampleInfo.first_timestamp && sampleInfo.last_timestamp && sampleInfo.count > 1) {
+            const timeRange = sampleInfo.last_timestamp - sampleInfo.first_timestamp;
+            if (timeRange > 0) {
+              const samplesPerSecond = sampleInfo.count / timeRange;
+              // Convert to samples per minute for readability
+              samplingRate = samplesPerSecond * 60;
+            }
+          }
+        }
       } catch (err) {
-        console.error('Error getting sample count:', err);
+        console.error('Error getting sample info:', err);
       }
 
       if (this.editingClassId === cls.id) {
@@ -911,9 +924,13 @@ class ClassManager {
           this.cancelEditing();
         });
       } else {
+        const statsText = samplingRate !== null 
+          ? `${sampleCount.toLocaleString()} samples (${samplingRate.toFixed(1)}/min)`
+          : `${sampleCount.toLocaleString()} samples`;
+        
         item.innerHTML = `
           <span class="class-item-name">${cls.name}</span>
-          <span class="class-item-stats">${sampleCount} samples</span>
+          <span class="class-item-stats">${statsText}</span>
           <div class="class-item-actions">
             <button class="edit-btn" title="Edit">
               <svg viewBox="0 0 24 24" fill="currentColor">
@@ -953,11 +970,59 @@ class StatisticsManager {
     this.statsPeak = document.getElementById('statsPeak');
     this.statsSampleCount = document.getElementById('statsSampleCount');
 
+    // All-time records elements
+    this.statsAllTimeCard = document.getElementById('statsAllTimeCard');
+    this.statsAllTimePeak = document.getElementById('statsAllTimePeak');
+    this.statsAllTimePeakDate = document.getElementById('statsAllTimePeakDate');
+    this.statsAllTimeMin = document.getElementById('statsAllTimeMin');
+    this.statsAllTimeMinDate = document.getElementById('statsAllTimeMinDate');
+    this.statsAllTimeAvg = document.getElementById('statsAllTimeAvg');
+
+    // Time-based elements
+    this.statsTimeBased = document.getElementById('statsTimeBased');
+    this.statsQuietestHour = document.getElementById('statsQuietestHour');
+    this.statsQuietestHourAvg = document.getElementById('statsQuietestHourAvg');
+    this.statsLoudestHour = document.getElementById('statsLoudestHour');
+    this.statsLoudestHourAvg = document.getElementById('statsLoudestHourAvg');
+    this.statsQuietestDay = document.getElementById('statsQuietestDay');
+    this.statsQuietestDayAvg = document.getElementById('statsQuietestDayAvg');
+    this.statsLoudestDay = document.getElementById('statsLoudestDay');
+    this.statsLoudestDayAvg = document.getElementById('statsLoudestDayAvg');
+
+    // Trend analysis elements
+    this.statsTrendAnalysis = document.getElementById('statsTrendAnalysis');
+    this.statsTrendDirection = document.getElementById('statsTrendDirection');
+    this.statsTrendChange = document.getElementById('statsTrendChange');
+    this.statsVolatility = document.getElementById('statsVolatility');
+    this.statsStdDev = document.getElementById('statsStdDev');
+    this.statsVolatilityFormula = document.getElementById('statsVolatilityFormula');
+
+    // Comparison elements
+    this.statsComparisonContainer = document.getElementById('statsComparisonContainer');
+    this.statsComparisonChart = document.getElementById('statsComparisonChart');
+
+    // Additional statistics elements
+    this.statsAdditional = document.getElementById('statsAdditional');
+    this.statsStressScore = document.getElementById('statsStressScore');
+    this.statsStressDescription = document.getElementById('statsStressDescription');
+    this.statsTotalTime = document.getElementById('statsTotalTime');
+    this.statsNoiseRange = document.getElementById('statsNoiseRange');
+    this.statsAvgSessionDuration = document.getElementById('statsAvgSessionDuration');
+
+    // Toggle button
+    this.toggleExplanationsBtn = document.getElementById('toggleExplanations');
+    this.explanationsVisible = false;
+
     this.svg = null;
     this.margin = { top: 20, right: 30, bottom: 40, left: 50 };
 
     this.statsClassSelect.addEventListener('change', () => this.loadData());
     this.statsTimeRange.addEventListener('change', () => this.loadData());
+    
+    // Toggle explanations
+    if (this.toggleExplanationsBtn) {
+      this.toggleExplanationsBtn.addEventListener('click', () => this.toggleExplanations());
+    }
   }
 
   updateClassSelect() {
@@ -1003,27 +1068,188 @@ class StatisticsManager {
 
   async loadData() {
     const classId = parseInt(this.statsClassSelect.value);
+    const { startTime, endTime } = this.getTimeRange();
+
+    // Always populate all sections with placeholders first
+    this.hideAllSections();
+
     if (!classId) {
       this.showNoData('Select a class to view statistics');
+      // All sections already have placeholders from hideAllSections()
       return;
     }
-
-    const { startTime, endTime } = this.getTimeRange();
 
     try {
       const samples = await window.electronAPI.getSamples(classId, startTime, endTime);
 
       if (!samples || samples.length === 0) {
         this.showNoData('No data available for this time range');
+        // All sections already have placeholders from hideAllSections()
+        // Still try to load stats that don't require samples
+        await this.loadAllTimeStats(classId);
+        await this.loadTimeBasedStats(classId, startTime, endTime);
+        await this.loadTrendAnalysis(classId, startTime, endTime);
+        await this.loadVolatility(classId, startTime, endTime);
+        await this.loadComparison(startTime, endTime);
+        await this.loadAdditionalStats(classId, [], startTime, endTime);
         return;
       }
 
       this.hideNoData();
       this.renderChart(samples);
       this.updateSummary(samples);
+      
+      // Load all additional statistics
+      await this.loadAllTimeStats(classId);
+      await this.loadTimeBasedStats(classId, startTime, endTime);
+      await this.loadTrendAnalysis(classId, startTime, endTime);
+      await this.loadVolatility(classId, startTime, endTime);
+      await this.loadComparison(startTime, endTime);
+      await this.loadAdditionalStats(classId, samples, startTime, endTime);
     } catch (err) {
       console.error('Error loading statistics:', err);
       this.showNoData('Error loading data');
+      // All sections already have placeholders from hideAllSections()
+    }
+  }
+
+  hideAllSections() {
+    // Populate all sections with placeholder values instead of hiding them
+    // All-Time Records
+    if (this.statsAllTimePeak) this.statsAllTimePeak.textContent = '--';
+    if (this.statsAllTimePeakDate) this.statsAllTimePeakDate.textContent = '--';
+    if (this.statsAllTimeMin) this.statsAllTimeMin.textContent = '--';
+    if (this.statsAllTimeMinDate) this.statsAllTimeMinDate.textContent = '--';
+    if (this.statsAllTimeAvg) this.statsAllTimeAvg.textContent = '--';
+
+    // Time-Based Stats
+    if (this.statsQuietestHour) this.statsQuietestHour.textContent = '--';
+    if (this.statsQuietestHourAvg) this.statsQuietestHourAvg.textContent = '--';
+    if (this.statsLoudestHour) this.statsLoudestHour.textContent = '--';
+    if (this.statsLoudestHourAvg) this.statsLoudestHourAvg.textContent = '--';
+    if (this.statsQuietestDay) this.statsQuietestDay.textContent = '--';
+    if (this.statsQuietestDayAvg) this.statsQuietestDayAvg.textContent = '--';
+    if (this.statsLoudestDay) this.statsLoudestDay.textContent = '--';
+    if (this.statsLoudestDayAvg) this.statsLoudestDayAvg.textContent = '--';
+
+    // Trend Analysis
+    if (this.statsTrendDirection) {
+      this.statsTrendDirection.textContent = '--';
+      this.statsTrendDirection.style.color = '#888';
+    }
+    if (this.statsTrendChange) {
+      this.statsTrendChange.textContent = '--';
+      this.statsTrendChange.style.color = '#888';
+    }
+    if (this.statsVolatility) this.statsVolatility.textContent = '--';
+    if (this.statsStdDev) this.statsStdDev.textContent = '--';
+
+    // Comparison Chart
+    if (this.statsComparisonChart) {
+      this.statsComparisonChart.innerHTML = '<div class="no-comparison-data">No comparison data available</div>';
+    }
+
+    // Additional Stats
+    if (this.statsStressScore) this.statsStressScore.textContent = '--';
+    if (this.statsStressDescription) this.statsStressDescription.textContent = 'No data';
+    if (this.statsTotalTime) this.statsTotalTime.textContent = '--';
+    if (this.statsNoiseRange) this.statsNoiseRange.textContent = '--';
+    if (this.statsAvgSessionDuration) this.statsAvgSessionDuration.textContent = '--';
+  }
+
+  getStressDescription(score) {
+    if (score === null || score === undefined) return '--';
+    if (score < 200) return 'Zen Master 🧘';
+    if (score < 400) return 'Calm & Collected 😌';
+    if (score < 600) return 'Mildly Annoyed 😑';
+    if (score < 800) return 'Getting Tense 😤';
+    if (score < 1000) return 'Stressed Out 😰';
+    if (score < 1200) return 'Maximum Overdrive 🚨';
+    return 'Code Red Emergency 🆘';
+  }
+
+  async loadAdditionalStats(classId, samples, startTime, endTime) {
+    try {
+      // Calculate Teacher Stress Score
+      const mostRecentDay = await window.electronAPI.getMostRecentDayAverage(classId);
+      if (mostRecentDay && mostRecentDay.avg_level !== null) {
+        const stressScore = Math.round(mostRecentDay.avg_level * 14);
+        this.statsStressScore.textContent = stressScore;
+        this.statsStressDescription.textContent = this.getStressDescription(stressScore);
+      } else {
+        this.statsStressScore.textContent = '--';
+        this.statsStressDescription.textContent = 'No recent data';
+      }
+
+      // Calculate total monitoring time
+      if (samples && samples.length > 0) {
+        const firstSample = samples[0].timestamp;
+        const lastSample = samples[samples.length - 1].timestamp;
+        const totalSeconds = lastSample - firstSample;
+        const totalHours = Math.floor(totalSeconds / 3600);
+        const totalMinutes = Math.floor((totalSeconds % 3600) / 60);
+        this.statsTotalTime.textContent = `${totalHours}h ${totalMinutes}m`;
+      } else {
+        this.statsTotalTime.textContent = '--';
+      }
+
+      // Calculate noise range (min-max spread)
+      if (samples && samples.length > 0) {
+        const levels = samples.map(s => s.level);
+        const minLevel = Math.min(...levels);
+        const maxLevel = Math.max(...levels);
+        const range = maxLevel - minLevel;
+        this.statsNoiseRange.textContent = range.toFixed(1);
+      } else {
+        this.statsNoiseRange.textContent = '--';
+      }
+
+      // Calculate average session duration
+      if (samples && samples.length > 1) {
+        // Detect sessions by finding gaps > 5 minutes
+        const sessions = [];
+        let currentSessionStart = samples[0].timestamp;
+        let currentSessionEnd = samples[0].timestamp;
+        
+        for (let i = 1; i < samples.length; i++) {
+          const gap = samples[i].timestamp - samples[i - 1].timestamp;
+          if (gap > 300) { // 5 minutes
+            // Session boundary
+            const duration = currentSessionEnd - currentSessionStart;
+            if (duration >= 600) { // At least 10 minutes
+              sessions.push(duration);
+            }
+            currentSessionStart = samples[i].timestamp;
+            currentSessionEnd = samples[i].timestamp;
+          } else {
+            currentSessionEnd = samples[i].timestamp;
+          }
+        }
+        
+        // Add last session
+        const lastDuration = currentSessionEnd - currentSessionStart;
+        if (lastDuration >= 600) {
+          sessions.push(lastDuration);
+        }
+        
+        if (sessions.length > 0) {
+          const avgDurationSeconds = sessions.reduce((a, b) => a + b, 0) / sessions.length;
+          const avgDurationMinutes = Math.round(avgDurationSeconds / 60);
+          this.statsAvgSessionDuration.textContent = avgDurationMinutes;
+        } else {
+          this.statsAvgSessionDuration.textContent = '--';
+        }
+      } else {
+        this.statsAvgSessionDuration.textContent = '--';
+      }
+
+    } catch (err) {
+      console.error('Error loading additional stats:', err);
+      this.statsStressScore.textContent = '--';
+      this.statsStressDescription.textContent = 'Error';
+      this.statsTotalTime.textContent = '--';
+      this.statsNoiseRange.textContent = '--';
+      this.statsAvgSessionDuration.textContent = '--';
     }
   }
 
@@ -1050,6 +1276,342 @@ class StatisticsManager {
     this.statsSampleCount.textContent = samples.length.toLocaleString();
   }
 
+  formatDuration(seconds) {
+    if (seconds < 60) {
+      return `${seconds}s`;
+    } else if (seconds < 3600) {
+      const minutes = Math.floor(seconds / 60);
+      const secs = seconds % 60;
+      return secs > 0 ? `${minutes}m ${secs}s` : `${minutes}m`;
+    } else {
+      const hours = Math.floor(seconds / 3600);
+      const minutes = Math.floor((seconds % 3600) / 60);
+      const secs = seconds % 60;
+      if (minutes === 0 && secs === 0) {
+        return `${hours}h`;
+      } else if (secs === 0) {
+        return `${hours}h ${minutes}m`;
+      } else {
+        return `${hours}h ${minutes}m ${secs}s`;
+      }
+    }
+  }
+
+  async loadAllTimeStats(classId) {
+    try {
+      const allTimeStats = await window.electronAPI.getAllTimeStats(classId);
+      const longestHighest = await window.electronAPI.getLongestDurationAtHighest(classId);
+      const longestLowest = await window.electronAPI.getLongestDurationAtLowest(classId);
+
+      if (!allTimeStats || allTimeStats.sample_count === 0) {
+        this.statsAllTimeAvg.textContent = '--';
+        this.statsAllTimeMin.textContent = '--';
+        this.statsAllTimePeak.textContent = '--';
+        this.statsAllTimePeakDate.textContent = 'No data';
+        this.statsAllTimeMinDate.textContent = 'No data';
+        return;
+      }
+
+      this.statsAllTimeAvg.textContent = allTimeStats.avg_level.toFixed(1) + '%';
+
+      // Display longest duration at highest level
+      if (longestHighest && longestHighest.duration) {
+        this.statsAllTimePeak.textContent = this.formatDuration(longestHighest.duration);
+        const startDate = new Date(longestHighest.startTime * 1000);
+        const endDate = new Date(longestHighest.endTime * 1000);
+        this.statsAllTimePeakDate.textContent = `${startDate.toLocaleDateString()} (${longestHighest.level.toFixed(1)}%)`;
+      } else {
+        this.statsAllTimePeak.textContent = '--';
+        this.statsAllTimePeakDate.textContent = '--';
+      }
+
+      // Display longest duration at lowest level
+      if (longestLowest && longestLowest.duration) {
+        this.statsAllTimeMin.textContent = this.formatDuration(longestLowest.duration);
+        const startDate = new Date(longestLowest.startTime * 1000);
+        const endDate = new Date(longestLowest.endTime * 1000);
+        this.statsAllTimeMinDate.textContent = `${startDate.toLocaleDateString()} (${longestLowest.level.toFixed(1)}%)`;
+      } else {
+        this.statsAllTimeMin.textContent = '--';
+        this.statsAllTimeMinDate.textContent = '--';
+      }
+
+    } catch (err) {
+      console.error('Error loading all-time stats:', err);
+      this.statsAllTimeAvg.textContent = '--';
+      this.statsAllTimeMin.textContent = '--';
+      this.statsAllTimePeak.textContent = '--';
+      this.statsAllTimePeakDate.textContent = 'Error';
+      this.statsAllTimeMinDate.textContent = 'Error';
+    }
+  }
+
+  formatTimeFromMinutes(minutes) {
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    const hour12 = hours % 12 || 12;
+    const ampm = hours < 12 ? 'AM' : 'PM';
+    const minStr = mins.toString().padStart(2, '0');
+    return `${hour12}:${minStr} ${ampm}`;
+  }
+
+  async loadTimeBasedStats(classId, startTime, endTime) {
+    try {
+      const sessionAnalysis = await window.electronAPI.getSessionBasedTimeAnalysis(classId, startTime, endTime);
+
+      if (!sessionAnalysis || sessionAnalysis.sessionCount === 0) {
+        this.statsQuietestHour.textContent = '--';
+        this.statsQuietestHourAvg.textContent = 'No sessions';
+        this.statsLoudestHour.textContent = '--';
+        this.statsLoudestHourAvg.textContent = 'No sessions';
+        this.statsQuietestDay.textContent = '--';
+        this.statsQuietestDayAvg.textContent = 'No pattern';
+        this.statsLoudestDay.textContent = '0';
+        this.statsLoudestDayAvg.textContent = 'sessions analyzed';
+        return;
+      }
+
+      // Display average quietest time
+      if (sessionAnalysis.avgQuietestTime) {
+        const quietestTime = this.formatTimeFromMinutes(sessionAnalysis.avgQuietestTime.minutesSinceMidnight);
+        this.statsQuietestHour.textContent = quietestTime;
+        this.statsQuietestHourAvg.textContent = `across ${sessionAnalysis.sessionCount} session${sessionAnalysis.sessionCount !== 1 ? 's' : ''}`;
+      } else {
+        this.statsQuietestHour.textContent = '--';
+        this.statsQuietestHourAvg.textContent = '--';
+      }
+
+      // Display average loudest time
+      if (sessionAnalysis.avgLoudestTime) {
+        const loudestTime = this.formatTimeFromMinutes(sessionAnalysis.avgLoudestTime.minutesSinceMidnight);
+        this.statsLoudestHour.textContent = loudestTime;
+        this.statsLoudestHourAvg.textContent = `across ${sessionAnalysis.sessionCount} session${sessionAnalysis.sessionCount !== 1 ? 's' : ''}`;
+      } else {
+        this.statsLoudestHour.textContent = '--';
+        this.statsLoudestHourAvg.textContent = '--';
+      }
+
+      // Display day pattern
+      if (sessionAnalysis.dayPattern) {
+        this.statsQuietestDay.textContent = sessionAnalysis.dayPattern;
+        this.statsQuietestDayAvg.textContent = 'pattern detected';
+      } else {
+        this.statsQuietestDay.textContent = 'No pattern';
+        this.statsQuietestDayAvg.textContent = '--';
+      }
+
+      // Display session count
+      this.statsLoudestDay.textContent = `${sessionAnalysis.sessionCount}`;
+      this.statsLoudestDayAvg.textContent = 'sessions analyzed';
+
+    } catch (err) {
+      console.error('Error loading time-based stats:', err);
+      this.statsQuietestHour.textContent = '--';
+      this.statsQuietestHourAvg.textContent = 'Error';
+      this.statsLoudestHour.textContent = '--';
+      this.statsLoudestHourAvg.textContent = 'Error';
+      this.statsQuietestDay.textContent = '--';
+      this.statsQuietestDayAvg.textContent = 'Error';
+      this.statsLoudestDay.textContent = '--';
+      this.statsLoudestDayAvg.textContent = 'Error';
+    }
+  }
+
+  async loadTrendAnalysis(classId, startTime, endTime) {
+    try {
+      const trend = await window.electronAPI.getTrendAnalysis(classId, startTime, endTime);
+
+      if (!trend || trend.trend === null) {
+        this.statsTrendDirection.textContent = '--';
+        this.statsTrendDirection.style.color = '#888';
+        this.statsTrendChange.textContent = '--';
+        this.statsTrendChange.style.color = '#888';
+        return;
+      }
+
+      let directionText = '→ Stable';
+      let changeText = '';
+      let directionColor = '#888';
+
+      if (trend.trend === 'increasing') {
+        directionText = '↑ Increasing';
+        changeText = `+${trend.percentChange.toFixed(1)}%`;
+        directionColor = '#ff6b6b';
+      } else if (trend.trend === 'decreasing') {
+        directionText = '↓ Decreasing';
+        changeText = `${trend.percentChange.toFixed(1)}%`;
+        directionColor = '#51cf66';
+      } else {
+        changeText = `${Math.abs(trend.percentChange).toFixed(1)}%`;
+      }
+
+      this.statsTrendDirection.textContent = directionText;
+      this.statsTrendDirection.style.color = directionColor;
+      this.statsTrendChange.textContent = changeText;
+      this.statsTrendChange.style.color = directionColor;
+
+    } catch (err) {
+      console.error('Error loading trend analysis:', err);
+      this.statsTrendDirection.textContent = '--';
+      this.statsTrendDirection.style.color = '#888';
+      this.statsTrendChange.textContent = 'Error';
+      this.statsTrendChange.style.color = '#888';
+    }
+  }
+
+  async loadVolatility(classId, startTime, endTime) {
+    try {
+      const volatility = await window.electronAPI.getVolatility(classId, startTime, endTime);
+
+      if (!volatility || volatility.stdDev === null) {
+        this.statsVolatility.textContent = '--';
+        this.statsStdDev.textContent = 'No data';
+        return;
+      }
+
+      this.statsVolatility.textContent = volatility.stdDev.toFixed(2) + '%';
+      this.statsStdDev.textContent = `Std Dev: ${volatility.stdDev.toFixed(2)}%`;
+    } catch (err) {
+      console.error('Error loading volatility:', err);
+      this.statsVolatility.textContent = '--';
+      this.statsStdDev.textContent = 'Error';
+    }
+  }
+
+  toggleExplanations() {
+    this.explanationsVisible = !this.explanationsVisible;
+    
+    // Update button text and state
+    const toggleText = this.toggleExplanationsBtn.querySelector('.toggle-text');
+    if (this.explanationsVisible) {
+      toggleText.textContent = 'Hide Explanations';
+      this.toggleExplanationsBtn.classList.add('active');
+    } else {
+      toggleText.textContent = 'Show Explanations';
+      this.toggleExplanationsBtn.classList.remove('active');
+    }
+    
+    // Toggle all explanation elements
+    const explanations = document.querySelectorAll('.stat-explanation, .volatility-formula');
+    explanations.forEach(explanation => {
+      if (this.explanationsVisible) {
+        explanation.classList.remove('explanation-hidden');
+      } else {
+        explanation.classList.add('explanation-hidden');
+      }
+    });
+  }
+
+  async loadComparison(startTime, endTime) {
+    try {
+      const allClasses = await window.electronAPI.getClassesAverages(startTime, endTime);
+
+      if (!allClasses || allClasses.length < 2) {
+        this.statsComparisonChart.innerHTML = '<div class="no-comparison-data">No comparison data available<br/><span style="font-size: 0.9rem; color: #666;">Need at least 2 classes with data</span></div>';
+        return;
+      }
+
+      this.renderComparisonChart(allClasses);
+    } catch (err) {
+      console.error('Error loading comparison:', err);
+      this.statsComparisonChart.innerHTML = '<div class="no-comparison-data">Error loading comparison data</div>';
+    }
+  }
+
+  renderComparisonChart(classesData) {
+    this.statsComparisonChart.innerHTML = '';
+
+    const containerRect = this.statsComparisonChart.getBoundingClientRect();
+    const width = containerRect.width || 800;
+    const height = Math.max(300, classesData.length * 40);
+    const margin = { top: 20, right: 100, bottom: 40, left: 150 };
+
+    const svg = d3.select(this.statsComparisonChart)
+      .append('svg')
+      .attr('width', width)
+      .attr('height', height + margin.top + margin.bottom)
+      .append('g')
+      .attr('transform', `translate(${margin.left},${margin.top})`);
+
+    const chartWidth = width - margin.left - margin.right;
+    const chartHeight = height;
+
+    // Create scales
+    const x = d3.scaleLinear()
+      .domain([0, Math.max(...classesData.map(d => d.avg_level), 50)])
+      .range([0, chartWidth]);
+
+    const y = d3.scaleBand()
+      .domain(classesData.map((d, i) => i))
+      .range([0, chartHeight])
+      .padding(0.2);
+
+    // Color scale - greener for quieter (lower), redder for louder (higher)
+    const maxLevel = Math.max(...classesData.map(d => d.avg_level));
+    const colorScale = d3.scaleSequential(d3.interpolateRdYlGn)
+      .domain([maxLevel, 0]);
+
+    // Add bars
+    svg.selectAll('.bar')
+      .data(classesData)
+      .enter()
+      .append('rect')
+      .attr('class', 'bar')
+      .attr('x', 0)
+      .attr('y', (d, i) => y(i))
+      .attr('width', d => x(d.avg_level))
+      .attr('height', y.bandwidth())
+      .attr('fill', d => colorScale(d.avg_level))
+      .attr('opacity', 0.8)
+      .on('mouseover', function(event, d) {
+        d3.select(this).attr('opacity', 1);
+      })
+      .on('mouseout', function() {
+        d3.select(this).attr('opacity', 0.8);
+      });
+
+    // Add class names
+    svg.selectAll('.class-label')
+      .data(classesData)
+      .enter()
+      .append('text')
+      .attr('class', 'class-label')
+      .attr('x', -10)
+      .attr('y', (d, i) => y(i) + y.bandwidth() / 2)
+      .attr('dy', '0.35em')
+      .attr('text-anchor', 'end')
+      .text(d => d.name)
+      .style('fill', '#eaeaea')
+      .style('font-size', '12px');
+
+    // Add average values
+    svg.selectAll('.value-label')
+      .data(classesData)
+      .enter()
+      .append('text')
+      .attr('class', 'value-label')
+      .attr('x', d => x(d.avg_level) + 5)
+      .attr('y', (d, i) => y(i) + y.bandwidth() / 2)
+      .attr('dy', '0.35em')
+      .text(d => `${d.avg_level.toFixed(1)}%`)
+      .style('fill', '#eaeaea')
+      .style('font-size', '11px')
+      .style('font-weight', 'bold');
+
+    // Add X axis
+    svg.append('g')
+      .attr('class', 'axis')
+      .attr('transform', `translate(0,${chartHeight})`)
+      .call(d3.axisBottom(x).tickFormat(d => d + '%'))
+      .style('color', '#888');
+
+    // Add Y axis (rank numbers)
+    svg.append('g')
+      .attr('class', 'axis')
+      .call(d3.axisLeft(y).tickFormat((d, i) => `#${i + 1}`))
+      .style('color', '#888');
+  }
+
   renderChart(samples) {
     this.statsChart.innerHTML = '';
 
@@ -1065,16 +1627,52 @@ class StatisticsManager {
       .append('g')
       .attr('transform', `translate(${this.margin.left},${this.margin.top})`);
 
-    // Parse data
-    const data = samples.map(s => ({
-      date: new Date(s.timestamp * 1000),
-      level: s.level,
-      peakLevel: s.peak_level || s.level
-    }));
+    // Aggregate samples by time of day (group by 5-minute intervals)
+    const timeSlots = new Map();
+    const slotSizeMinutes = 5; // Group into 5-minute intervals
+    
+    samples.forEach(s => {
+      const date = new Date(s.timestamp * 1000);
+      const hours = date.getHours();
+      const minutes = date.getMinutes();
+      // Round to nearest 5-minute slot
+      const slotMinutes = Math.floor(minutes / slotSizeMinutes) * slotSizeMinutes;
+      const timeOfDay = hours * 60 + slotMinutes; // Minutes since midnight
+      
+      if (!timeSlots.has(timeOfDay)) {
+        timeSlots.set(timeOfDay, []);
+      }
+      timeSlots.get(timeOfDay).push(s.level);
+    });
 
-    // Create scales
-    const x = d3.scaleTime()
-      .domain(d3.extent(data, d => d.date))
+    // Calculate averages and peaks for each time slot and sort by time
+    const aggregatedData = Array.from(timeSlots.entries())
+      .map(([timeOfDay, levels]) => ({
+        timeOfDay: timeOfDay, // minutes since midnight
+        level: levels.reduce((sum, l) => sum + l, 0) / levels.length,
+        peakLevel: Math.max(...levels), // Highest level recorded at this time slot
+        sampleCount: levels.length
+      }))
+      .sort((a, b) => a.timeOfDay - b.timeOfDay);
+
+    // Determine the actual time range of available data
+    if (aggregatedData.length === 0) {
+      // No data, use default range
+      return;
+    }
+
+    const minTime = aggregatedData[0].timeOfDay;
+    const maxTime = aggregatedData[aggregatedData.length - 1].timeOfDay;
+    
+    // Add padding (15 minutes on each side, or 5% of range, whichever is larger)
+    const timeRange = maxTime - minTime;
+    const padding = Math.max(15, timeRange * 0.05);
+    const domainMin = Math.max(0, minTime - padding);
+    const domainMax = Math.min(1440, maxTime + padding);
+
+    // Create scales - x-axis zooms to available data range
+    const x = d3.scaleLinear()
+      .domain([domainMin, domainMax])
       .range([0, width]);
 
     const y = d3.scaleLinear()
@@ -1100,6 +1698,15 @@ class StatisticsManager {
       .attr('stop-color', '#00d4ff')
       .attr('stop-opacity', 0.1);
 
+    // Helper function to format time of day (minutes since midnight) to HH:MM
+    const formatTimeOfDay = (minutes) => {
+      const hours = Math.floor(minutes / 60);
+      const mins = minutes % 60;
+      const period = hours >= 12 ? 'PM' : 'AM';
+      const displayHours = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours;
+      return `${displayHours}:${mins.toString().padStart(2, '0')} ${period}`;
+    };
+
     // Add grid lines
     svg.append('g')
       .attr('class', 'grid')
@@ -1112,32 +1719,36 @@ class StatisticsManager {
 
     // Add area
     const area = d3.area()
-      .x(d => x(d.date))
+      .x(d => x(d.timeOfDay))
       .y0(height)
       .y1(d => y(d.level))
       .curve(d3.curveMonotoneX);
 
     svg.append('path')
-      .datum(data)
+      .datum(aggregatedData)
       .attr('class', 'area')
       .attr('d', area);
 
     // Add line
     const line = d3.line()
-      .x(d => x(d.date))
+      .x(d => x(d.timeOfDay))
       .y(d => y(d.level))
       .curve(d3.curveMonotoneX);
 
     svg.append('path')
-      .datum(data)
+      .datum(aggregatedData)
       .attr('class', 'line')
       .attr('d', line);
 
-    // Add X axis
+    // Add X axis with time of day labels
+    const xAxis = d3.axisBottom(x)
+      .ticks(12) // Show 12 ticks (every 2 hours)
+      .tickFormat(minutes => formatTimeOfDay(minutes));
+    
     svg.append('g')
       .attr('class', 'axis x-axis')
       .attr('transform', `translate(0,${height})`)
-      .call(d3.axisBottom(x).ticks(6));
+      .call(xAxis);
 
     // Add Y axis
     svg.append('g')
@@ -1151,16 +1762,13 @@ class StatisticsManager {
       .style('opacity', 0)
       .style('position', 'absolute');
 
-    // Add dots for interactivity (sparse to avoid clutter)
-    const step = Math.max(1, Math.floor(data.length / 50));
-    const sparseData = data.filter((_, i) => i % step === 0);
-
+    // Add dots for interactivity (show all aggregated points)
     svg.selectAll('.dot')
-      .data(sparseData)
+      .data(aggregatedData)
       .enter()
       .append('circle')
       .attr('class', 'dot')
-      .attr('cx', d => x(d.date))
+      .attr('cx', d => x(d.timeOfDay))
       .attr('cy', d => y(d.level))
       .attr('r', 4)
       .style('opacity', 0)
@@ -1169,9 +1777,10 @@ class StatisticsManager {
         tooltip
           .style('opacity', 1)
           .html(`
-            <strong>${d.date.toLocaleTimeString()}</strong><br/>
-            Level: ${d.level.toFixed(1)}%<br/>
-            Peak: ${d.peakLevel.toFixed(1)}%
+            <strong>${formatTimeOfDay(d.timeOfDay)}</strong><br/>
+            <span>Avg Level: ${d.level.toFixed(1)}%</span><br/>
+            <span>Peak Level: ${d.peakLevel.toFixed(1)}%</span><br/>
+            <span style="font-size: 0.85em; color: #aaa;">${d.sampleCount} sample${d.sampleCount !== 1 ? 's' : ''}</span>
           `)
           .style('left', (event.offsetX + 10) + 'px')
           .style('top', (event.offsetY - 10) + 'px');
